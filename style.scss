@@ -1,0 +1,197 @@
+/* ============================================================
+   Netflix Theme for Lampa — SCSS source
+   Компилируется: make build-plugins (gulp pack_plugins)
+   ============================================================ */
+
+/* --- Custom Properties --- */
+:root {
+  --nf-bg:        #141414;
+  --nf-surface:   #181818;
+  --nf-red:       #E50914;
+  --nf-red-glow:  rgba(229, 9, 20, 0.35);
+  --nf-text:      #e5e5e5;
+  --nf-text-dim:  #999999;
+  --nf-radius:    1em;
+  --nf-ease:      cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --nf-ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- Base --- */
+body {
+  background-color: var(--nf-bg) !important;
+}
+
+/* spotlight: незафокусированные карточки затемнены */
+.card:not(.card--wide) .card__img {
+  background-color: var(--nf-surface);
+  filter: brightness(0.85);
+  transition: filter 0.3s var(--nf-ease);
+}
+
+.card:not(.card--wide).focus .card__img,
+.card:not(.card--wide).hover .card__img {
+  filter: brightness(1.05);
+}
+
+/* ============================================================
+   ANIMATION 1: Card scale + info reveal
+   ============================================================ */
+
+.items-line .scroll--over {
+  overflow: visible;
+}
+
+.card:not(.card--wide) {
+  .card__view {
+    transition: transform 0.3s var(--nf-ease), box-shadow 0.3s var(--nf-ease);
+    border-radius: var(--nf-radius);
+    position: relative;
+    z-index: 1;
+  }
+
+  /* z-index на .card — чтобы scaled карточка перекрывала соседей */
+  &.focus,
+  &.hover {
+    position: relative;
+    z-index: 10;
+
+    .card__view {
+      transform: scale(1.12) !important;
+      animation: none !important;
+      box-shadow: 0 0 0 2px var(--nf-red), 0 8px 32px var(--nf-red-glow) !important;
+    }
+
+    /* убираем оригинальный ::after бордер Lampa — заменяем его box-shadow */
+    .card__view::after {
+      border: none !important;
+    }
+
+    .nf-overlay {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* --- nf-overlay --- */
+.nf-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.92) 0%,
+    rgba(0, 0, 0, 0.55) 45%,
+    transparent 100%
+  );
+  border-radius: var(--nf-radius);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0.9em 0.8em;
+  pointer-events: none;    /* не перехватывает фокус TV-пульта */
+  opacity: 0;
+  transform: translateY(0.3em);
+  transition: opacity 0.25s var(--nf-ease), transform 0.25s var(--nf-ease);
+}
+
+.nf-overlay__title {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #ffffff;
+  line-height: 1.3;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.nf-overlay__meta {
+  font-size: 0.75em;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 0.25em;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* скрываем название и год под карточками — они дублируются в overlay */
+.card:not(.card--wide) .card__title,
+.card:not(.card--wide) .card__age {
+  display: none;
+}
+
+/* ============================================================
+   Row / UI chrome
+   ============================================================ */
+
+.items-line__title {
+  font-weight: 600;
+  color: var(--nf-text);
+  letter-spacing: 0.02em;
+}
+
+.items-line__more {
+  &.focus,
+  &.hover {
+    background-color: var(--nf-red);
+    border-color: var(--nf-red);
+  }
+}
+
+/* ============================================================
+   ANIMATION 3: Logo intro
+   ============================================================ */
+
+@keyframes nf-logo-intro {
+  0% {
+    opacity: 0;
+    transform: scale(3);
+    filter: drop-shadow(0 0 24px var(--nf-red)) brightness(2.5);
+  }
+  60% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px var(--nf-red)) brightness(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: none;
+  }
+}
+
+.head__logo-icon {
+  animation: nf-logo-intro 1.2s var(--nf-ease) both;
+}
+
+/* ============================================================
+   ANIMATION 2: Row whoosh on activity:start
+   ============================================================ */
+
+@keyframes nf-row-enter {
+  from { opacity: 0; transform: translateY(2em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes nf-card-enter {
+  from { opacity: 0; transform: translateX(1.5em); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.items-line.nf-row-animated {
+  animation: nf-row-enter 0.4s var(--nf-ease-out) both;
+
+  /* Stagger: 20 карточек × 0.04s задержка; fill=both — остаются на месте */
+  @for $i from 1 through 20 {
+    .card:nth-child(#{$i}) {
+      animation: nf-card-enter 0.35s var(--nf-ease-out) #{($i - 1) * 0.04}s both;
+    }
+  }
+}
