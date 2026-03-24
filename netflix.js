@@ -226,15 +226,18 @@ function pluginNetflix() {
             if (!backdropUrl) return;
 
             // если уже есть в этой строке — просто обновляем
-            var existing = row.querySelector('.nf-hero');
+            // hero вставляется ПОСЛЕ строки, не внутрь —
+            // иначе высота строки растёт и вертикальный скролл
+            // Lampa центрирует её вместе с hero, карточки уходят вверх
+            var existing = row.nextSibling && row.nextSibling.classList && row.nextSibling.classList.contains('nf-hero')
+                ? row.nextSibling : null;
             if (existing) {
                 hero = existing;
             } else {
-                // убираем hero из другой строки
                 removeHero();
                 hero = document.createElement('div');
                 hero.className = 'nf-hero';
-                row.appendChild(hero);
+                row.parentNode.insertBefore(hero, row.nextSibling);
             }
 
             var year  = (card.querySelector('.card__age') || {}).textContent || '';
@@ -295,8 +298,9 @@ function pluginNetflix() {
             clearTimeout(timer);
             var row = card.closest ? card.closest('.items-line') : null;
             if (!row) return;
+            // если фокус ушёл на другую строку — убираем hero сразу
+            if (activeRow && activeRow !== row) removeHero();
             timer = setTimeout(function() {
-                // проверяем что карточка всё ещё в фокусе
                 if (card.classList.contains('focus') || card.classList.contains('hover')) {
                     showHero(card, row);
                 }
