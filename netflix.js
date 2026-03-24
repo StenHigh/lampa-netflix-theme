@@ -221,9 +221,12 @@ function pluginNetflix() {
                 : '';
             if (!backdropUrl) return;
 
-            // позиционируем fixed-панель сразу под строкой
+            // позиционируем fixed-панель под строкой, слегка перекрывая отступ
             var rect = row.getBoundingClientRect();
-            hero.style.top = Math.round(rect.bottom) + 'px';
+            var topPos = Math.round(rect.bottom) - 20;
+            hero.style.top = topPos + 'px';
+            // заполняем пространство до низа экрана (минус небольшой отступ)
+            hero.style.height = Math.max(200, window.innerHeight - topPos - 16) + 'px';
 
             var year  = (card.querySelector('.card__age') || {}).textContent || '';
             var title = (card.querySelector('.card__title') || {}).textContent || '';
