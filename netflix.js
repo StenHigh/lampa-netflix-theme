@@ -321,6 +321,21 @@ function pluginNetflix() {
                 removeHero();
             }
         });
+
+        // скрываем hero при появлении модальных окон (.modal внутри .wrap)
+        var modalObserver = new MutationObserver(function(mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+                var nodes = mutations[i].addedNodes;
+                for (var j = 0; j < nodes.length; j++) {
+                    if (nodes[j].classList && nodes[j].classList.contains('modal')) {
+                        clearTimeout(timer);
+                        hero.classList.remove('nf-hero--visible');
+                        return;
+                    }
+                }
+            }
+        });
+        modalObserver.observe(document.body, { childList: true, subtree: true });
     }
 
     // --------------------------------------------------------

@@ -151,6 +151,14 @@ body {
   opacity: 0;
   transform: translateY(0.4em);
   transition: opacity 0.35s var(--nf-ease), transform 0.35s var(--nf-ease);
+  /* чёрный фон пока backdrop-изображение грузится */
+  background-color: var(--nf-bg);
+}
+
+/* скрываем hero при открытых настройках и других оверлеях */
+body.settings--open .nf-hero {
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
 .nf-hero--visible {
