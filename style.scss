@@ -155,8 +155,9 @@ body {
   background-color: var(--nf-bg);
 }
 
-/* скрываем hero при открытых настройках и других оверлеях */
-body.settings--open .nf-hero {
+/* скрываем hero при открытых настройках, меню и других оверлеях */
+body.settings--open .nf-hero,
+body.menu--open .nf-hero {
   opacity: 0 !important;
   pointer-events: none;
 }
@@ -193,6 +194,12 @@ body.settings--open .nf-hero {
   left: 2em;
   right: 42%;
   z-index: 2;
+  /* frosted glass под текстом, остальная картинка остаётся чёткой */
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-radius: 0.75em;
+  padding: 1em 1.2em;
 }
 
 .nf-hero__title {
