@@ -62,6 +62,7 @@ function pluginNetflix() {
                 }
 
                 view.appendChild(overlay);
+
                 count++;
             }
 
@@ -180,6 +181,162 @@ function pluginNetflix() {
     }
 
     // --------------------------------------------------------
+    // Hero billboard: при фокусе на карточке вставляем под
+    // строкой панель 16:9 с backdrop + название + мета.
+    // Убирается при переходе на другую строку или активность.
+    // --------------------------------------------------------
+    function initHeroBillboard() {
+        var timer = null;
+        var activeRow = null;
+        var hero = null;
+
+        function getGenres(cardData) {
+            if (cardData.genres && cardData.genres.length) {
+                return cardData.genres.slice(0, 3).map(function(g) { return g.name; }).join(' · ');
+            }
+            if (cardData.genre_ids && cardData.genre_ids.length) {
+                try {
+                    var ct = cardData.original_name ? 'tv' : 'movie';
+                    return Lampa.Api.sources.tmdb.getGenresNameFromIds(ct, cardData.genre_ids).slice(0, 3).join(' · ');
+                } catch(e) {}
+            }
+            return '';
+        }
+
+        function removeHero() {
+            clearTimeout(timer);
+            if (hero) {
+                hero.classList.remove('nf-hero--visible');
+                var h = hero;
+                setTimeout(function() {
+                    if (h && h.parentNode) h.parentNode.removeChild(h);
+                }, 400);
+                hero = null;
+                activeRow = null;
+            }
+        }
+
+        function showHero(card, row) {
+            var cardData = card.card_data;
+            if (!cardData) return;
+
+            var backdropUrl = cardData.backdrop_path
+                ? Lampa.Api.img(cardData.backdrop_path, 'w1280')
+                : '';
+            if (!backdropUrl) return;
+
+            // если уже есть в этой строке — просто обновляем
+            var existing = row.querySelector('.nf-hero');
+            if (existing) {
+                hero = existing;
+            } else {
+                // убираем hero из другой строки
+                removeHero();
+                hero = document.createElement('div');
+                hero.className = 'nf-hero';
+                row.appendChild(hero);
+            }
+
+            var year  = (card.querySelector('.card__age') || {}).textContent || '';
+            var title = (card.querySelector('.card__title') || {}).textContent || '';
+            var genres = getGenres(cardData);
+            var vote  = cardData.vote_average ? parseFloat(cardData.vote_average).toFixed(1) : '';
+            var meta  = [year, genres].filter(Boolean).join('  ·  ');
+
+            hero.innerHTML = '';
+
+            var img = document.createElement('img');
+            img.className = 'nf-hero__img';
+            img.src = backdropUrl;
+
+            var gradient = document.createElement('div');
+            gradient.className = 'nf-hero__gradient';
+
+            var info = document.createElement('div');
+            info.className = 'nf-hero__info';
+
+            var titleEl = document.createElement('div');
+            titleEl.className = 'nf-hero__title';
+            titleEl.textContent = title;
+
+            var metaEl = document.createElement('div');
+            metaEl.className = 'nf-hero__meta';
+            metaEl.textContent = meta;
+
+            info.appendChild(titleEl);
+            if (meta) info.appendChild(metaEl);
+            if (vote && parseFloat(vote) > 0) {
+                var voteEl = document.createElement('div');
+                voteEl.className = 'nf-hero__vote';
+                voteEl.textContent = '★ ' + vote;
+                info.appendChild(voteEl);
+            }
+            var overview = cardData.overview || '';
+            if (overview) {
+                var descEl = document.createElement('div');
+                descEl.className = 'nf-hero__desc';
+                descEl.textContent = overview;
+                info.appendChild(descEl);
+            }
+
+            hero.appendChild(img);
+            hero.appendChild(gradient);
+            hero.appendChild(info);
+            activeRow = row;
+
+            // форсируем reflow перед добавлением класса для анимации
+            hero.offsetHeight;
+            hero.classList.add('nf-hero--visible');
+
+            console.log('[netflix] hero shown:', title);
+        }
+
+        function onCardFocus(card) {
+            clearTimeout(timer);
+            var row = card.closest ? card.closest('.items-line') : null;
+            if (!row) return;
+            timer = setTimeout(function() {
+                // проверяем что карточка всё ещё в фокусе
+                if (card.classList.contains('focus') || card.classList.contains('hover')) {
+                    showHero(card, row);
+                }
+            }, 600);
+        }
+
+        // Следим за добавлением класса .focus на карточки через MutationObserver.
+        // hover:focus не всплывает — этот подход надёжнее прямых listeners.
+        var area = document.querySelector('.activitys') || document.querySelector('.wrap__content') || document.body;
+        var observer = new MutationObserver(function(mutations) {
+            for (var i = 0; i < mutations.length; i++) {
+                var el = mutations[i].target;
+                if (
+                    el.classList &&
+                    el.classList.contains('card') &&
+                    !el.classList.contains('card--wide') &&
+                    el.classList.contains('focus')
+                ) {
+                    onCardFocus(el);
+                    break;
+                }
+            }
+        });
+        observer.observe(area, {
+            attributes: true,
+            attributeFilter: ['class'],
+            subtree: true
+        });
+        console.log('[netflix] hero observer started');
+
+        // убираем hero при смене экрана
+        Lampa.Listener.follow('activity', function(e) {
+            if (e.type === 'start' || e.type === 'back') {
+                clearTimeout(timer);
+                removeHero();
+            }
+        });
+    }
+
+    // --------------------------------------------------------
     // Init
     // --------------------------------------------------------
     function init() {
@@ -187,6 +344,7 @@ function pluginNetflix() {
         initCardOverlays();
         initRowAnimations();
         initNetflixCursor();
+        initHeroBillboard();
         console.log('[netflix] plugin ready');
     }
 
