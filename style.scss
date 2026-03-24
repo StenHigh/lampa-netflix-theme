@@ -133,17 +133,19 @@ body {
    ============================================================ */
 
 .nf-hero {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
+  /* fixed — не влияет на document flow, Lampa скроллит корректно */
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* top задаётся динамически через JS (getBoundingClientRect) */
+  height: 40vh;
   overflow: hidden;
   border-radius: var(--nf-radius);
-  margin-top: 0.8em;
+  z-index: 50;
+  pointer-events: none;
   opacity: 0;
-  transform: translateY(0.6em);
+  transform: translateY(0.4em);
   transition: opacity 0.35s var(--nf-ease), transform 0.35s var(--nf-ease);
-  /* fallback для старых TV без aspect-ratio */
-  max-height: 40vh;
 }
 
 .nf-hero--visible {

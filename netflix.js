@@ -181,14 +181,17 @@ function pluginNetflix() {
     }
 
     // --------------------------------------------------------
-    // Hero billboard: при фокусе на карточке вставляем под
-    // строкой панель 16:9 с backdrop + название + мета.
-    // Убирается при переходе на другую строку или активность.
+    // Hero billboard: position:fixed панель с backdrop под строкой.
+    // fixed — не влияет на document flow и расчёты скролла Lampa.
     // --------------------------------------------------------
     function initHeroBillboard() {
         var timer = null;
         var activeRow = null;
-        var hero = null;
+
+        // создаём hero один раз, вешаем на body (fixed — вне потока)
+        var hero = document.createElement('div');
+        hero.className = 'nf-hero';
+        document.body.appendChild(hero);
 
         function getGenres(cardData) {
             if (cardData.genres && cardData.genres.length) {
@@ -205,15 +208,8 @@ function pluginNetflix() {
 
         function removeHero() {
             clearTimeout(timer);
-            if (hero) {
-                hero.classList.remove('nf-hero--visible');
-                var h = hero;
-                setTimeout(function() {
-                    if (h && h.parentNode) h.parentNode.removeChild(h);
-                }, 400);
-                hero = null;
-                activeRow = null;
-            }
+            hero.classList.remove('nf-hero--visible');
+            activeRow = null;
         }
 
         function showHero(card, row) {
@@ -225,20 +221,9 @@ function pluginNetflix() {
                 : '';
             if (!backdropUrl) return;
 
-            // если уже есть в этой строке — просто обновляем
-            // hero вставляется ПОСЛЕ строки, не внутрь —
-            // иначе высота строки растёт и вертикальный скролл
-            // Lampa центрирует её вместе с hero, карточки уходят вверх
-            var existing = row.nextSibling && row.nextSibling.classList && row.nextSibling.classList.contains('nf-hero')
-                ? row.nextSibling : null;
-            if (existing) {
-                hero = existing;
-            } else {
-                removeHero();
-                hero = document.createElement('div');
-                hero.className = 'nf-hero';
-                row.parentNode.insertBefore(hero, row.nextSibling);
-            }
+            // позиционируем fixed-панель сразу под строкой
+            var rect = row.getBoundingClientRect();
+            hero.style.top = Math.round(rect.bottom) + 'px';
 
             var year  = (card.querySelector('.card__age') || {}).textContent || '';
             var title = (card.querySelector('.card__title') || {}).textContent || '';
@@ -287,8 +272,7 @@ function pluginNetflix() {
             hero.appendChild(info);
             activeRow = row;
 
-            // форсируем reflow перед добавлением класса для анимации
-            hero.offsetHeight;
+            hero.offsetHeight; // force reflow for transition
             hero.classList.add('nf-hero--visible');
 
             console.log('[netflix] hero shown:', title);
@@ -298,14 +282,7 @@ function pluginNetflix() {
             clearTimeout(timer);
             var row = card.closest ? card.closest('.items-line') : null;
             if (!row) return;
-            // если фокус ушёл на другую строку — убираем hero мгновенно из DOM,
-            // чтобы Lampa не учитывал его высоту при скролле к новой строке
-            if (activeRow && activeRow !== row) {
-                clearTimeout(timer);
-                if (hero && hero.parentNode) hero.parentNode.removeChild(hero);
-                hero = null;
-                activeRow = null;
-            }
+            if (activeRow && activeRow !== row) removeHero();
             timer = setTimeout(function() {
                 if (card.classList.contains('focus') || card.classList.contains('hover')) {
                     showHero(card, row);
@@ -313,8 +290,6 @@ function pluginNetflix() {
             }, 600);
         }
 
-        // Следим за добавлением класса .focus на карточки через MutationObserver.
-        // hover:focus не всплывает — этот подход надёжнее прямых listeners.
         var area = document.querySelector('.activitys') || document.querySelector('.wrap__content') || document.body;
         var observer = new MutationObserver(function(mutations) {
             for (var i = 0; i < mutations.length; i++) {
@@ -337,7 +312,6 @@ function pluginNetflix() {
         });
         console.log('[netflix] hero observer started');
 
-        // убираем hero при смене экрана
         Lampa.Listener.follow('activity', function(e) {
             if (e.type === 'start' || e.type === 'back') {
                 clearTimeout(timer);
