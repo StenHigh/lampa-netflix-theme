@@ -298,8 +298,14 @@ function pluginNetflix() {
             clearTimeout(timer);
             var row = card.closest ? card.closest('.items-line') : null;
             if (!row) return;
-            // если фокус ушёл на другую строку — убираем hero сразу
-            if (activeRow && activeRow !== row) removeHero();
+            // если фокус ушёл на другую строку — убираем hero мгновенно из DOM,
+            // чтобы Lampa не учитывал его высоту при скролле к новой строке
+            if (activeRow && activeRow !== row) {
+                clearTimeout(timer);
+                if (hero && hero.parentNode) hero.parentNode.removeChild(hero);
+                hero = null;
+                activeRow = null;
+            }
             timer = setTimeout(function() {
                 if (card.classList.contains('focus') || card.classList.contains('hover')) {
                     showHero(card, row);
