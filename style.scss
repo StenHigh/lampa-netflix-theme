@@ -21,6 +21,11 @@ body {
   background-color: var(--nf-bg) !important;
 }
 
+/* Уменьшаем отступ сверху в контентной области (scroll__content добавляет ~2.2em) */
+.activity__body .scroll__content {
+  padding-top: 0.4em !important;
+}
+
 /* spotlight: незафокусированные карточки затемнены */
 .card:not(.card--wide) .card__img {
   background-color: var(--nf-surface);
